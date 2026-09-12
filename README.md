@@ -1,48 +1,236 @@
-# 🌍 TerraNode - ULP Environmental & Seismic LoRa Node
+# TerraNode-ULP
 
-## 📌 Project Overview
-An open-source, Ultra-Low Power (ULP) autonomous sensor node built on the ESP32 architecture. Designed for long-term field deployment (12-18 months), this project combines atmospheric telemetry with edge-computed seismic detection. 
+**Ultra-Low-Power Environmental & Event Monitoring Node**
 
-The system leverages LoRa RF communication to transmit critical data while maintaining extreme energy efficiency through dynamic Deep Sleep scheduling and hardware-level interrupts.
+TerraNode-ULP is an open-source embedded platform for long-term autonomous environmental monitoring using **ESP32, low-power sensing and long-range LoRa telemetry**.
 
-## 🚀 Core Architecture & Features
-* **Dynamic Sleep Intervals:** The node adjusts its deep sleep cycles (e.g., 5 to 30 minutes) dynamically. Following each transmission, the node opens a brief RX window to receive configuration payloads (like RTC sync or interval updates) from the central gateway.
-* **Edge Computing (FFT):** Seismic and vibration data are processed locally on the ESP32. By applying Fast Fourier Transform (FFT) algorithms, the node distinguishes genuine tectonic events from anthropogenic noise (wind, passing vehicles).
-* **Event-Driven Wakeups:** The microcontroller remains in deep sleep to conserve power. However, if a high-sensitivity IMU detects acceleration exceeding a defined threshold, a hardware interrupt immediately wakes the ESP32 to evaluate the event.
-* **Battery & Thermals:** Designed for maximum stability with minimal parasitic drain, utilizing switched voltage dividers for battery monitoring and ULP LDOs.
+The project is designed around a simple idea:
 
-## 📡 Sensor Array
-### Base Implementation
-* **T/H/P:** Barometric pressure, humidity, and temperature monitoring (BME280).
-* **Air Quality:** CO2 and VOC toxicity tracking.
-* **Seismic Activity:** Vibration module evaluating event duration, peak intensity, and calculating a seismic probability factor.
+> Build a field node that can collect useful environmental data for long periods, react to local events, and communicate its measurements over a long-range wireless link while minimizing energy consumption.
 
-### Future Expandability (Reserved I/O)
-* **Ambient Light / UV:** Illuminance tracking for solar efficiency evaluation.
-* **Mechanical Weather Sensors:** Rain gauge and anemometer integration using zero-power reed switch interrupts.
+The initial target is a battery-powered outdoor node with a design goal of **12–18 months of autonomous operation**. This target will be validated through measured power consumption rather than theoretical estimates.
 
-## 🗺️ Development Roadmap
+## Project Goals
 
-**Phase 1: Sensor Prototyping & C++ Fundamentals**
-* Bring up ESP32 with PlatformIO.
-* Develop basic I2C communication for environmental sensors.
-* Implement raw accelerometer data reading, threshold triggers, and basic FFT signal processing.
+The first version of TerraNode focuses on:
 
-**Phase 2: RF Communication Link**
-* Establish Point-to-Point (P2P) LoRa communication between two nodes (e.g., LILYGO TTGO LoRa32).
-* Define the byte-struct payload for optimized, low-bandwidth transmission.
-* Implement the post-TX RX window for bidirectional communication.
+* Environmental monitoring
 
-**Phase 3: Full Integration & Power Optimization (Test Bench)**
-* Combine all sensor libraries and LoRa transmissions on a single test bench.
-* Implement deep sleep routines and hardware interrupt wake-ups.
-* Finalize the payload structure and verify dynamic interval updates.
+  * Temperature
+  * Relative humidity
+  * Atmospheric pressure
+* Air-quality / gas sensing
+* Low-power seismic or vibration event detection
+* Battery voltage and power monitoring
+* Long-range LoRa telemetry
+* Autonomous operation using deep sleep
+* Event-driven wake-up
+* Modular hardware that can be expanded in future revisions
 
-**Phase 4: Custom Hardware & Enclosure Deployment**
-* **PCB Design:** Route a custom board featuring the ESP32-WROOM, an external LoRa SMD module (868 MHz), a switched voltage divider, and an MCP1700 LDO for power management.
-* **Mechanical Design:** Design and 3D print a weather-proof ASA enclosure. Incorporate external SMA bulkhead connectors for the antenna and O-ring sealing for environmental protection.
+Wind sensing and other environmental sensors may be added later where they provide useful information for specific deployments.
 
-## 🔧 Hardware Stack (Target)
-* **MCU:** ESP32 (LILYGO TTGO LoRa32 for prototyping -> ESP32-WROOM for final PCB)
-* **RF:** LoRa 868 MHz (ISM band for EU compliance)
-* **Power:** 18650 Li-Ion Cell, ULP Voltage Regulation, optional trickle-charge Solar Panel
+## System Concept
+
+The node periodically wakes from deep sleep, powers and reads the required sensors, processes the measurements locally and transmits a compact telemetry packet over LoRa.
+
+A simplified operating cycle is:
+
+```text
+        ┌─────────────┐
+        │ Deep Sleep  │
+        └──────┬──────┘
+               │
+          RTC / Event
+               │
+               ▼
+        ┌─────────────┐
+        │ Wake & Init │
+        └──────┬──────┘
+               ▼
+        ┌─────────────┐
+        │ Sensor Read │
+        └──────┬──────┘
+               ▼
+        ┌─────────────┐
+        │ Local       │
+        │ Processing  │
+        └──────┬──────┘
+               ▼
+        ┌─────────────┐
+        │ LoRa TX/RX  │
+        └──────┬──────┘
+               ▼
+        ┌─────────────┐
+        │ Return to   │
+        │ Deep Sleep  │
+        └─────────────┘
+```
+
+The ESP32 performs the primary sensing, control and event-processing tasks locally. A separate gateway or server can be used for long-term data collection and visualization, but the field node itself is designed to operate independently.
+
+## Key Engineering Challenges
+
+The project is not primarily about collecting sensor data. The main engineering challenges are:
+
+* Achieving very low average power consumption
+* Designing reliable deep-sleep and wake-up behaviour
+* Managing sensor power and leakage currents
+* Reliable long-range LoRa communication
+* Designing a robust telemetry protocol
+* Handling sensor and communication failures
+* Measuring and validating real-world battery performance
+* Designing hardware suitable for outdoor deployment
+* Developing a modular custom PCB
+
+## Hardware Architecture
+
+The final hardware architecture is being developed iteratively.
+
+The current concept consists of:
+
+* **MCU:** ESP32
+* **Radio:** LoRa, 868 MHz
+* **Environmental sensing:** temperature / humidity / pressure
+* **Air-quality sensing:** sensor under evaluation
+* **Event sensing:** low-power accelerometer / IMU
+* **Power:** Li-Ion battery with low-quiescent-current regulation
+* **Battery monitoring:** voltage and current measurement
+* **External sensor interfaces:** I²C / GPIO / ADC as required
+* **Protection:** power filtering and transient protection
+* **Mechanical:** 3D-printed outdoor enclosure
+
+The prototype will initially use development boards and sensor modules. A custom PCB will be designed after the main architecture and component choices have been validated.
+
+## Firmware
+
+Firmware development is planned in **C++ using ESP-IDF / PlatformIO**.
+
+The firmware architecture will be built around explicit operating states such as:
+
+```text
+BOOT
+  ↓
+WAKE REASON
+  ↓
+INITIALIZE
+  ↓
+ACQUIRE DATA
+  ↓
+PROCESS
+  ↓
+TRANSMIT
+  ↓
+HANDLE CONFIGURATION
+  ↓
+POWER DOWN
+  ↓
+DEEP SLEEP
+```
+
+The firmware will eventually include:
+
+* Deep-sleep power management
+* RTC-based periodic wake-up
+* Hardware interrupt wake-up
+* Sensor power gating
+* LoRa telemetry
+* Packet sequencing and validation
+* Watchdog and fault recovery
+* Configurable measurement intervals
+* Local event detection
+
+## Development Status
+
+**Current stage: Architecture & early prototyping**
+
+The initial development phase focuses on:
+
+* Establishing LoRa communication between two ESP32/LILYGO boards
+* Building the initial C++ firmware structure
+* Testing environmental sensors
+* Developing the telemetry format
+* Measuring power consumption
+* Organizing the engineering documentation
+* Evaluating sensor and power-management options
+
+The custom PCB and final enclosure will be developed after the prototype architecture has been validated.
+
+## Roadmap
+
+### Phase 1 — Proof of Concept
+
+* ESP32 firmware foundation
+* Sensor communication
+* LoRa point-to-point communication
+* Initial telemetry protocol
+* Basic gateway
+
+### Phase 2 — Low-Power Prototype
+
+* Deep sleep
+* Wake-up mechanisms
+* Sensor power gating
+* Battery monitoring
+* Power measurements
+* Event detection
+
+### Phase 3 — System Integration
+
+* Final sensor selection
+* Telemetry protocol refinement
+* Fault handling
+* Outdoor communication tests
+* Battery-life estimation from measured data
+
+### Phase 4 — Custom Hardware
+
+* KiCad schematic
+* PCB layout
+* Manufacturing
+* PCB bring-up
+* Hardware validation
+
+### Phase 5 — Field Prototype
+
+* 3D-printed enclosure
+* Environmental protection
+* Long-duration testing
+* LoRa range testing
+* Power and reliability characterization
+
+## Future Development
+
+TerraNode is intended to remain modular.
+
+Possible future directions include:
+
+* Solar-assisted operation
+* Additional environmental sensors
+* More advanced wildfire/environmental event detection
+* Distributed multi-node deployments
+* Autonomous deployment using UAVs
+* Integration with a dedicated gateway and long-term database
+* Higher-performance sensing hardware for seismic applications
+
+These features are considered future development and are not requirements for the initial V1 prototype.
+
+## Repository Structure
+
+```text
+TerraNode-ULP/
+├── firmware/
+├── hardware/
+├── gateway/
+├── docs/
+├── measurements/
+├── tests/
+└── README.md
+```
+
+The repository will document both the **design process and measured results**, including hardware revisions, power measurements, communication tests and validation data.
+
+---
+
+**Status:** Work in progress
+**Target:** Autonomous low-power field monitoring platform
+**Development:** ESP32 · C++ · LoRa · KiCad · PCB Manufacturing
