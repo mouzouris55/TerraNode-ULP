@@ -195,7 +195,7 @@ These are theoretical limits, not usable design targets. The real budget must in
 
 The **Nordic Power Profiler Kit II (PPK2)** is the primary development tool for power profiling.
 
-It supports external custom hardware and can measure from the sub-µA range to 1 A, with high-speed current profiling up to 100 kS/s. citeturn0search4turn0search6
+It supports external custom hardware and can measure from the sub-µA range to 1 A, with high-speed current profiling up to 100 kS/s.
 
 The following profiles will be measured separately:
 
