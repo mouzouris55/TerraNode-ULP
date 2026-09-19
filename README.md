@@ -460,13 +460,9 @@ Primary prototype resources include:
 - existing sensor/component kits
 - prototype PCBs/breadboards
 - logic analyzer
-- university oscilloscope
+- oscilloscope
 - PPK2
 - laboratory power supply when required
-
-The current AliExpress cart already contains several supporting items such as MCP1825S regulators, BME280 modules, LIS3DH module, logic analyzer, test clips, prototype PCBs, wiring, hot-air equipment, flux and mechanical hardware. fileciteturn5file0
-
-The cart should not be treated as a requirement list: items will be kept, removed or replaced after the final component architecture is defined.
 
 ## Development Sequence
 
